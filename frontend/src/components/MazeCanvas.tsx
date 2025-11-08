@@ -1,10 +1,30 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import type { MazeData } from '../utils/types';
+import type { MazeData, WallShape } from '../utils/types';
 
 type MazeCanvasProps = {
   mazeData: MazeData | null;
+};
+
+const drawWallShape = (context: CanvasRenderingContext2D, shape: WallShape) => {
+  const { path } = shape;
+  if (!path || path.length < 2) {
+    return;
+  }
+
+  context.beginPath();
+  context.moveTo(path[0].x, path[0].y);
+
+  for (let i = 1; i < path.length; i += 1) {
+    context.lineTo(path[i].x, path[i].y);
+  }
+
+  if (path.length > 2) {
+    context.closePath();
+  }
+
+  context.fill();
 };
 
 const MazeCanvas = ({ mazeData }: MazeCanvasProps) => {
@@ -47,17 +67,34 @@ const MazeCanvas = ({ mazeData }: MazeCanvasProps) => {
     context.fillStyle = '#020617';
     context.fillRect(0, 0, canvas_width, canvas_height);
 
-    context.strokeStyle = '#f8fafc';
-    context.lineWidth = Math.max(1.8, Math.min(4.8, Math.sqrt(canvas_width * canvas_height) / 350));
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
+    const isHexMaze =
+      walls.length > 0 && walls.every((shape) => shape.path.length === 2);
 
-    walls.forEach((segment) => {
-      context.beginPath();
-      context.moveTo(segment.start.x, segment.start.y);
-      context.lineTo(segment.end.x, segment.end.y);
-      context.stroke();
-    });
+    if (isHexMaze) {
+      context.strokeStyle = '#f8fafc';
+      context.lineWidth = Math.max(
+        1.8,
+        Math.min(4.8, Math.sqrt(canvas_width * canvas_height) / 350),
+      );
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+
+      walls.forEach((shape) => {
+        if (shape.path.length < 2) {
+          return;
+        }
+        const [start, end] = shape.path;
+        context.beginPath();
+        context.moveTo(start.x, start.y);
+        context.lineTo(end.x, end.y);
+        context.stroke();
+      });
+    } else {
+      context.fillStyle = '#f8fafc';
+      walls.forEach((shape) => {
+        drawWallShape(context, shape);
+      });
+    }
   }, [mazeData]);
 
   return (

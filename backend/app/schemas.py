@@ -7,12 +7,11 @@ class Point(BaseModel):
     y: float
 
 
-class WallSegment(BaseModel):
-    start: Point
-    end: Point
+class WallShape(BaseModel):
+    path: List[Point]
 
 
 class MazeData(BaseModel):
     canvas_width: float
     canvas_height: float
-    walls: List[WallSegment]
+    walls: List[WallShape]
