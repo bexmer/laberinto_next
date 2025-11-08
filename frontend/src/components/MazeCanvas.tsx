@@ -175,6 +175,7 @@ const drawStylizedGridMaze = (
   ctx: CanvasRenderingContext2D,
   mazeData: MazeData,
   settings: GenerationSettings,
+  options?: { strokeStyle?: string },
 ) => {
   const { cells, grid_width, grid_height, passage_size, wall_thickness } = mazeData;
   const { wall_style, shape_variance } = settings;
@@ -192,7 +193,9 @@ const drawStylizedGridMaze = (
   const { colCenters, rowCenters } = layout;
 
   // 3. Preparar el canvas para dibujar
-  ctx.strokeStyle = 'white';
+  const strokeColor = options?.strokeStyle ?? 'white';
+
+  ctx.strokeStyle = strokeColor;
   ctx.lineWidth = wall_thickness;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -345,7 +348,16 @@ const drawStylizedGridMaze = (
   }
 };
 
-const drawWireMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
+const drawWireMaze = (
+  ctx: CanvasRenderingContext2D,
+  mazeData: MazeData,
+  options?: {
+    strokeStyle?: string;
+    lineWidthScale?: number;
+    lineCap?: CanvasLineCap;
+    lineJoin?: CanvasLineJoin;
+  },
+) => {
   const { cells, grid_width, grid_height, passage_size, wall_thickness } = mazeData;
 
   const E = 2;
@@ -358,10 +370,13 @@ const drawWireMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
     wall_thickness,
   );
 
-  ctx.strokeStyle = '#b3b3b3';
-  ctx.lineWidth = Math.max(1, Math.round(passage_size * 0.08));
-  ctx.lineCap = 'butt';
-  ctx.lineJoin = 'miter';
+  const strokeStyle = options?.strokeStyle ?? '#b3b3b3';
+  const lineWidthScale = options?.lineWidthScale ?? 0.08;
+
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = Math.max(1, Math.round(passage_size * lineWidthScale));
+  ctx.lineCap = options?.lineCap ?? 'butt';
+  ctx.lineJoin = options?.lineJoin ?? 'miter';
 
   const grid = buildGridFromCells(cells, grid_width, grid_height);
 
@@ -388,20 +403,35 @@ const drawWireMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
   }
 };
 
-const drawDeltaMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
+const drawDeltaMaze = (
+  ctx: CanvasRenderingContext2D,
+  mazeData: MazeData,
+  options?: {
+    strokeStyle?: string;
+    lineWidthScale?: number;
+    amplitudeScale?: number;
+    drawBorder?: boolean;
+    lineCap?: CanvasLineCap;
+    lineJoin?: CanvasLineJoin;
+  },
+) => {
   const { cells, grid_width, grid_height, passage_size, wall_thickness } = mazeData;
 
   const grid = buildGridFromCells(cells, grid_width, grid_height);
   const layout = getRenderLayout(grid_width, grid_height, passage_size, wall_thickness);
   const { colCenters, rowCenters } = layout;
 
-  const stroke = Math.max(1, Math.round(passage_size * 0.18));
-  const amplitude = (passage_size + wall_thickness) * 0.45;
+  const stroke = Math.max(
+    1,
+    Math.round(passage_size * (options?.lineWidthScale ?? 0.18)),
+  );
+  const amplitude =
+    (passage_size + wall_thickness) * (options?.amplitudeScale ?? 0.45);
 
-  ctx.strokeStyle = '#111111';
+  ctx.strokeStyle = options?.strokeStyle ?? '#111111';
   ctx.lineWidth = stroke;
-  ctx.lineCap = 'butt';
-  ctx.lineJoin = 'round';
+  ctx.lineCap = options?.lineCap ?? 'butt';
+  ctx.lineJoin = options?.lineJoin ?? 'round';
 
   const drawRoundedPeak = (start: Point, apex: Point, end: Point) => {
     ctx.beginPath();
@@ -437,16 +467,17 @@ const drawDeltaMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
     }
   }
 
-  // Añadir contorno exterior para asemejar la referencia
-  ctx.lineWidth = stroke;
-  ctx.beginPath();
-  ctx.rect(
-    stroke,
-    stroke,
-    mazeData.canvas_width - stroke * 2,
-    mazeData.canvas_height - stroke * 2,
-  );
-  ctx.stroke();
+  if (options?.drawBorder ?? true) {
+    ctx.lineWidth = stroke;
+    ctx.beginPath();
+    ctx.rect(
+      stroke,
+      stroke,
+      mazeData.canvas_width - stroke * 2,
+      mazeData.canvas_height - stroke * 2,
+    );
+    ctx.stroke();
+  }
 };
 
 // --- EL COMPONENTE CANVAS PRINCIPAL ---
@@ -467,7 +498,9 @@ const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
         ? '#ffffff'
         : settings?.render_style === 'wire'
           ? '#f8fafc'
-          : '#111827';
+          : settings?.render_style === 'combined'
+            ? '#0f172a'
+            : '#111827';
       context.fillStyle = fallbackBg;
       context.fillRect(0, 0, canvas.width, canvas.height);
       return;
@@ -478,7 +511,9 @@ const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
       ? '#f8fafc'
       : settings.render_style === 'delta'
         ? '#ffffff'
-        : '#111827';
+        : settings.render_style === 'combined'
+          ? '#0f172a'
+          : '#111827';
 
     // Ajustar el tamaño del canvas
     canvas.width = canvas_width;
@@ -494,6 +529,38 @@ const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
         drawWireMaze(context, mazeData);
       } else if (settings.render_style === 'delta') {
         drawDeltaMaze(context, mazeData);
+      } else if (settings.render_style === 'combined') {
+        drawStylizedGridMaze(context, mazeData, settings, {
+          strokeStyle: '#e2e8f0',
+        });
+        drawWireMaze(context, mazeData, {
+          strokeStyle: 'rgba(148, 163, 184, 0.7)',
+          lineWidthScale: 0.06,
+          lineCap: 'round',
+          lineJoin: 'round',
+        });
+        drawDeltaMaze(context, mazeData, {
+          strokeStyle: '#f97316',
+          lineWidthScale: 0.14,
+          amplitudeScale: 0.42,
+          drawBorder: false,
+          lineCap: 'round',
+          lineJoin: 'round',
+        });
+
+        const borderWidth = Math.max(1, Math.round(mazeData.passage_size * 0.12));
+        context.lineWidth = borderWidth;
+        context.strokeStyle = '#e2e8f0';
+        context.lineJoin = 'round';
+        context.lineCap = 'butt';
+        context.beginPath();
+        context.rect(
+          borderWidth,
+          borderWidth,
+          canvas_width - borderWidth * 2,
+          canvas_height - borderWidth * 2,
+        );
+        context.stroke();
       } else {
         drawStylizedGridMaze(context, mazeData, settings);
       }
@@ -505,7 +572,9 @@ const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
           ? '#1f2937'
           : settings.render_style === 'delta'
             ? '#111827'
-            : 'white';
+            : settings.render_style === 'combined'
+              ? '#e2e8f0'
+              : 'white';
       context.textAlign = 'center';
       context.fillText(
         'El generador Hexagonal aún no está implementado para el dibujado.',
