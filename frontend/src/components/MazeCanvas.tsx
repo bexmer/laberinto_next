@@ -400,16 +400,13 @@ const drawDeltaMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
 
   ctx.strokeStyle = '#111111';
   ctx.lineWidth = stroke;
-  ctx.lineCap = 'square';
-  ctx.lineJoin = 'miter';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
-  const drawPolyline = (points: Point[]) => {
-    if (points.length < 2) return;
+  const drawCurve = (start: Point, control: Point, end: Point) => {
     ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
-    }
+    ctx.moveTo(start.x, start.y);
+    ctx.quadraticCurveTo(control.x, control.y, end.x, end.y);
     ctx.stroke();
   };
 
@@ -423,27 +420,23 @@ const drawDeltaMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
       if (cell.open_walls & 2 && x < grid_width - 1) {
         const nx = colCenters[x + 1];
         const spanX = Math.abs(nx - cx);
-        const bend = Math.min(offset, spanX / 2) * 0.55;
-        const midX = (cx + nx) / 2;
-        const midY = cy + parity * bend;
-        drawPolyline([
-          { x: cx, y: cy },
-          { x: midX, y: midY },
-          { x: nx, y: cy },
-        ]);
+        const bend = Math.min(offset, spanX / 2) * 0.5;
+        const control: Point = {
+          x: (cx + nx) / 2,
+          y: cy + parity * bend,
+        };
+        drawCurve({ x: cx, y: cy }, control, { x: nx, y: cy });
       }
 
       if (cell.open_walls & 4 && y < grid_height - 1) {
         const ny = rowCenters[y + 1];
         const spanY = Math.abs(ny - cy);
-        const bend = Math.min(offset, spanY / 2) * 0.55;
-        const midY = (cy + ny) / 2;
-        const midX = cx + parity * bend;
-        drawPolyline([
-          { x: cx, y: cy },
-          { x: midX, y: midY },
-          { x: cx, y: ny },
-        ]);
+        const bend = Math.min(offset, spanY / 2) * 0.5;
+        const control: Point = {
+          x: cx + parity * bend,
+          y: (cy + ny) / 2,
+        };
+        drawCurve({ x: cx, y: cy }, control, { x: cx, y: ny });
       }
     }
   }
