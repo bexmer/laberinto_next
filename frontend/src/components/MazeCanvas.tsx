@@ -397,7 +397,6 @@ const drawDeltaMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
 
   const stroke = Math.max(1, Math.round(passage_size * 0.18));
   const amplitude = (passage_size + wall_thickness) * 0.45;
-  const trimRatio = 0.55;
 
   ctx.strokeStyle = '#111111';
   ctx.lineWidth = stroke;
@@ -405,36 +404,9 @@ const drawDeltaMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
   ctx.lineJoin = 'round';
 
   const drawRoundedPeak = (start: Point, apex: Point, end: Point) => {
-    const vecToStart = { x: apex.x - start.x, y: apex.y - start.y };
-    const vecToEnd = { x: apex.x - end.x, y: apex.y - end.y };
-    const lenToStart = Math.hypot(vecToStart.x, vecToStart.y);
-    const lenToEnd = Math.hypot(vecToEnd.x, vecToEnd.y);
-
-    if (lenToStart === 0 || lenToEnd === 0) {
-      ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(end.x, end.y);
-      ctx.stroke();
-      return;
-    }
-
-    const trimStart = lenToStart * trimRatio;
-    const trimEnd = lenToEnd * trimRatio;
-
-    const beforeApex: Point = {
-      x: apex.x - (vecToStart.x / lenToStart) * trimStart,
-      y: apex.y - (vecToStart.y / lenToStart) * trimStart,
-    };
-    const afterApex: Point = {
-      x: apex.x - (vecToEnd.x / lenToEnd) * trimEnd,
-      y: apex.y - (vecToEnd.y / lenToEnd) * trimEnd,
-    };
-
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
-    ctx.lineTo(beforeApex.x, beforeApex.y);
-    ctx.quadraticCurveTo(apex.x, apex.y, afterApex.x, afterApex.y);
-    ctx.lineTo(end.x, end.y);
+    ctx.quadraticCurveTo(apex.x, apex.y, end.x, end.y);
     ctx.stroke();
   };
 
