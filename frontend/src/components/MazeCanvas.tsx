@@ -15,8 +15,8 @@ type Layout = {
   colWidths: number[];
   rowStarts: number[];
   rowHeights: number[];
-  colCenters: number[];
-  rowCenters: number[];
+  colCenters: number[]; // Centros de pasillos (columnas)
+  rowCenters: number[]; // Centros de pasillos (filas)
 };
 
 /**
@@ -37,7 +37,8 @@ const getRenderLayout = (
   const colWidths: number[] = [];
   const colStarts: number[] = [];
   let colOffset = 0;
-  const cols = gridWidth * 2 + 1; // Muro, Pasillo, Muro, ...
+  // Columnas: Muro, Pasillo, Muro, Pasillo, ..., Muro
+  const cols = gridWidth * 2 + 1;
 
   for (let i = 0; i < cols; i++) {
     colStarts.push(colOffset);
@@ -49,7 +50,8 @@ const getRenderLayout = (
   const rowHeights: number[] = [];
   const rowStarts: number[] = [];
   let rowOffset = 0;
-  const rows = gridHeight * 2 + 1; // Muro, Pasillo, Muro, ...
+  // Filas: Muro, Pasillo, Muro, Pasillo, ..., Muro
+  const rows = gridHeight * 2 + 1;
 
   for (let i = 0; i < rows; i++) {
     rowStarts.push(rowOffset);
@@ -61,12 +63,12 @@ const getRenderLayout = (
   // Calcular centros de pasillos (nodos)
   const colCenters: number[] = [];
   for (let i = 0; i < gridWidth; i++) {
-    const colIndex = i * 2 + 1;
+    const colIndex = i * 2 + 1; // 1, 3, 5...
     colCenters.push(colStarts[colIndex] + colWidths[colIndex] / 2);
   }
   const rowCenters: number[] = [];
   for (let i = 0; i < gridHeight; i++) {
-    const rowIndex = i * 2 + 1;
+    const rowIndex = i * 2 + 1; // 1, 3, 5...
     rowCenters.push(rowStarts[rowIndex] + rowHeights[rowIndex] / 2);
   }
 
@@ -84,34 +86,37 @@ const computeCornerGeometry = (
   variance: number,
   dirA: 'east' | 'west' | 'south' | 'north',
   dirB: 'east' | 'west' | 'south' | 'north',
-): { pointA: Point; pointB: Point } | null => {
-  const halfPassage = passageSize / 2;
+): { pointA: Point; pointB: Point; trimA: number; trimB: number } | null => {
+  const halfPassageA = passageSize / 2;
+  const halfPassageB = passageSize / 2;
 
   // Lógica de ángulos
-  const angle = randomInRange(30, 60); // Ángulo más conservador
+  const angle = randomInRange(30, 75); // Ángulos variados
   const angleRad = (angle * Math.PI) / 180;
   const tangent = Math.tan(angleRad);
   if (!Number.isFinite(tangent) || tangent <= 0) return null;
 
-  let along = Math.min(halfPassage, halfPassage / tangent);
+  let along = Math.min(halfPassageA, halfPassageB / tangent);
   let perp = along * tangent;
 
+  // Aplicar varianza
   const scale = 0.4 + variance * (0.4 + Math.random() * 0.2);
   along *= scale;
   perp *= scale;
 
-  if (perp > halfPassage) {
-    const ratio = halfPassage / perp;
-    perp = halfPassage;
+  // Recalcular si se pasa de los límites
+  if (perp > halfPassageB) {
+    const ratio = halfPassageB / perp;
+    perp = halfPassageB;
     along *= ratio;
   }
-  if (along > halfPassage) {
-    const ratio = halfPassage / along;
-    along = halfPassage;
+  if (along > halfPassageA) {
+    const ratio = halfPassageA / along;
+    along = halfPassageA;
     perp *= ratio;
   }
 
-  const minUseful = halfPassage * 0.15;
+  const minUseful = halfPassageA * 0.15;
   if (along <= minUseful || perp <= minUseful) {
     return null;
   }
@@ -127,17 +132,23 @@ const computeCornerGeometry = (
   const infoA = dirMap[dirA];
   const infoB = dirMap[dirB];
 
+  // Punto en la dirección A
   const pointA = {
     x: centerX + (infoA.axis === 'x' ? infoA.sign * along : 0),
     y: centerY + (infoA.axis === 'y' ? infoA.sign * along : 0),
   };
 
+  // Punto en la dirección B
   const pointB = {
     x: centerX + (infoB.axis === 'x' ? infoB.sign * perp : 0),
     y: centerY + (infoB.axis === 'y' ? infoB.sign * perp : 0),
   };
 
-  return { pointA, pointB };
+  // Cuánto "recortar" de las líneas rectas
+  const trimA = infoA.axis === 'x' ? Math.abs(pointA.x - centerX) : Math.abs(pointA.y - centerY);
+  const trimB = infoB.axis === 'x' ? Math.abs(pointB.x - centerX) : Math.abs(pointB.y - centerY);
+
+  return { pointA, pointB, trimA, trimB };
 };
 
 /**
@@ -157,7 +168,7 @@ const drawStylizedGridMaze = (
   const S = 4;
   const W = 8; // Bitmasks
 
-  // Convertir celdas a una matriz 2D para fácil acceso
+  // 1. Convertir celdas a una matriz 2D para fácil acceso
   const grid: MazeCell[][] = Array.from({ length: grid_height }, () =>
     Array.from({ length: grid_width }, () => ({ x: 0, y: 0, open_walls: 0 })),
   );
@@ -165,9 +176,11 @@ const drawStylizedGridMaze = (
     grid[cell.y][cell.x] = cell;
   });
 
+  // 2. Calcular el layout
   const layout = getRenderLayout(grid_width, grid_height, passage_size, wall_thickness);
   const { colCenters, rowCenters } = layout;
 
+  // 3. Preparar el canvas para dibujar
   ctx.strokeStyle = 'white';
   ctx.lineWidth = wall_thickness;
   ctx.lineCap = 'round';
@@ -175,106 +188,36 @@ const drawStylizedGridMaze = (
 
   const useStyle = wall_style !== 'grid' && shape_variance > 0;
 
+  // Almacenes para la geometría de las esquinas
   const nodeConnections: Record<string, string[]> = {};
   const nodeTrims: Record<string, Record<string, number>> = {};
 
-  // 1. Calcular la geometría de las esquinas primero
-  for (let y = 0; y < grid_height; y++) {
-    for (let x = 0; x < grid_width; x++) {
-      const cell = grid[y][x];
-      const key = `${x},${y}`;
-      if (!nodeConnections[key]) nodeConnections[key] = [];
-      if (!nodeTrims[key]) nodeTrims[key] = {};
-
-      const cx = colCenters[x];
-      const cy = rowCenters[y];
-
-      const connections: string[] = [];
-      if (cell.open_walls & E) connections.push('east');
-      if (cell.open_walls & S) connections.push('south');
-      if (cell.open_walls & W) connections.push('west');
-      if (cell.open_walls & N) connections.push('north');
-      nodeConnections[key] = connections;
-
-      if (!useStyle || connections.length !== 2) continue;
-
-      // Solo estilizar esquinas de 90 grados
-      const pairs: Array<['east' | 'west' | 'south' | 'north', 'east' | 'west' | 'south' | 'north']> = [
-        ['east', 'south'],
-        ['south', 'west'],
-        ['west', 'north'],
-        ['north', 'east'],
-      ];
-
-      for (const [dirA, dirB] of pairs) {
-        if (connections.includes(dirA) && connections.includes(dirB)) {
-          const corner = computeCornerGeometry(
-            cx,
-            cy,
-            passage_size,
-            shape_variance,
-            dirA,
-            dirB,
-          );
-          if (corner) {
-            const trimA =
-              dirA === 'east' || dirA === 'west'
-                ? Math.abs(corner.pointA.x - cx)
-                : Math.abs(corner.pointA.y - cy);
-            const trimB =
-              dirB === 'east' || dirB === 'west'
-                ? Math.abs(corner.pointB.x - cx)
-                : Math.abs(corner.pointB.y - cy);
-            nodeTrims[key][dirA] = (nodeTrims[key][dirA] ?? 0) + trimA;
-            nodeTrims[key][dirB] = (nodeTrims[key][dirB] ?? 0) + trimB;
-          }
-        }
-      }
-    }
-  }
-
-  // 2. Dibujar los pasillos (líneas rectas)
-  for (let y = 0; y < grid_height; y++) {
-    for (let x = 0; x < grid_width; x++) {
-      const cell = grid[y][x];
-      const cx = colCenters[x];
-      const cy = rowCenters[y];
-      const key = `${x},${y}`;
-
-      if (cell.open_walls & E && x < grid_width - 1) {
-        const trimStart = nodeTrims[key]['east'] ?? 0;
-        const trimEnd = nodeTrims[`${x + 1},${y}`]?.['west'] ?? 0;
-        ctx.beginPath();
-        ctx.moveTo(cx + trimStart, cy);
-        ctx.lineTo(colCenters[x + 1] - trimEnd, cy);
-        ctx.stroke();
-      }
-      if (cell.open_walls & S && y < grid_height - 1) {
-        const trimStart = nodeTrims[key]['south'] ?? 0;
-        const trimEnd = nodeTrims[`${x},${y + 1}`]?.['north'] ?? 0;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy + trimStart);
-        ctx.lineTo(cx, rowCenters[y + 1] - trimEnd);
-        ctx.stroke();
-      }
-    }
-  }
-
-  // 3. Dibujar las esquinas estilizadas
+  // 4. Calcular la geometría de las esquinas PRIMERO
   if (useStyle) {
     for (let y = 0; y < grid_height; y++) {
       for (let x = 0; x < grid_width; x++) {
+        const cell = grid[y][x];
         const key = `${x},${y}`;
-        const connections = nodeConnections[key];
-        if (connections.length !== 2) continue;
+        nodeConnections[key] = [];
+        nodeTrims[key] = {};
 
         const cx = colCenters[x];
         const cy = rowCenters[y];
 
-        let style = wall_style;
-        if (style === 'organic mix') style = Math.random() < 0.5 ? 'curved' : 'angled';
+        const connections: string[] = [];
+        if (cell.open_walls & E) connections.push('east');
+        if (cell.open_walls & S) connections.push('south');
+        if (cell.open_walls & W) connections.push('west');
+        if (cell.open_walls & N) connections.push('north');
+        nodeConnections[key] = connections;
 
-        const pairs: Array<['east' | 'west' | 'south' | 'north', 'east' | 'west' | 'south' | 'north']> = [
+        if (connections.length < 2) continue;
+
+        // Definir pares de esquinas de 90 grados
+        const pairs: [
+          ('east' | 'west' | 'south' | 'north'),
+          ('east' | 'west' | 'south' | 'north'),
+        ][] = [
           ['east', 'south'],
           ['south', 'west'],
           ['west', 'north'],
@@ -283,6 +226,87 @@ const drawStylizedGridMaze = (
 
         for (const [dirA, dirB] of pairs) {
           if (connections.includes(dirA) && connections.includes(dirB)) {
+            // Esta celda tiene una esquina (ej. Este y Sur)
+            const corner = computeCornerGeometry(
+              cx,
+              cy,
+              passage_size,
+              shape_variance,
+              dirA,
+              dirB,
+            );
+            if (corner) {
+              // Guardar cuánto debemos "recortar" la línea recta
+              nodeTrims[key][dirA] = Math.max(nodeTrims[key][dirA] ?? 0, corner.trimA);
+              nodeTrims[key][dirB] = Math.max(nodeTrims[key][dirB] ?? 0, corner.trimB);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 5. Dibujar los pasillos (líneas rectas recortadas)
+  for (let y = 0; y < grid_height; y++) {
+    for (let x = 0; x < grid_width; x++) {
+      const cell = grid[y][x];
+      const cx = colCenters[x];
+      const cy = rowCenters[y];
+      const key = `${x},${y}`;
+
+      // Dibujar pasillo al ESTE
+      if (cell.open_walls & E && x < grid_width - 1) {
+        const trimStart = nodeTrims[key]?.['east'] ?? 0;
+        const trimEnd = nodeTrims[`${x + 1},${y}`]?.['west'] ?? 0;
+        ctx.beginPath();
+        ctx.moveTo(cx + trimStart, cy);
+        ctx.lineTo(colCenters[x + 1] - trimEnd, cy);
+        ctx.stroke();
+      }
+
+      // Dibujar pasillo al SUR
+      if (cell.open_walls & S && y < grid_height - 1) {
+        const trimStart = nodeTrims[key]?.['south'] ?? 0;
+        const trimEnd = nodeTrims[`${x},${y + 1}`]?.['north'] ?? 0;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + trimStart);
+        ctx.lineTo(cx, rowCenters[y + 1] - trimEnd);
+        ctx.stroke();
+      }
+
+      // (Los pasillos Norte y Oeste son dibujados por las celdas anteriores)
+    }
+  }
+
+  // 6. Dibujar las esquinas estilizadas (curvas o ángulos)
+  if (useStyle) {
+    for (let y = 0; y < grid_height; y++) {
+      for (let x = 0; x < grid_width; x++) {
+        const key = `${x},${y}`;
+        const connections = nodeConnections[key];
+        if (connections.length < 2) continue; // No es una esquina
+
+        const cx = colCenters[x];
+        const cy = rowCenters[y];
+
+        let style = wall_style;
+        if (style === 'organic mix') {
+          style = Math.random() < 0.5 ? 'curved' : 'angled';
+        }
+
+        const pairs: [
+          ('east' | 'west' | 'south' | 'north'),
+          ('east' | 'west' | 'south' | 'north'),
+        ][] = [
+          ['east', 'south'],
+          ['south', 'west'],
+          ['west', 'north'],
+          ['north', 'east'],
+        ];
+
+        for (const [dirA, dirB] of pairs) {
+          if (connections.includes(dirA) && connections.includes(dirB)) {
+            // Volvemos a calcular la geometría para obtener los puntos A y B
             const corner = computeCornerGeometry(
               cx,
               cy,
@@ -295,8 +319,10 @@ const drawStylizedGridMaze = (
               ctx.beginPath();
               ctx.moveTo(corner.pointA.x, corner.pointA.y);
               if (style === 'angled') {
+                // Conexión recta para 'angled'
                 ctx.lineTo(corner.pointB.x, corner.pointB.y);
               } else {
+                // Conexión curva para 'curved'
                 ctx.quadraticCurveTo(cx, cy, corner.pointB.x, corner.pointB.y);
               }
               ctx.stroke();
@@ -324,8 +350,9 @@ const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
     context.fillStyle = '#111827'; // bg-gray-900
     context.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Si no hay datos, no dibujar nada
     if (!mazeData || !settings) {
-      return; // No hay nada que dibujar
+      return;
     }
 
     const { canvas_width, canvas_height } = mazeData;
@@ -340,9 +367,18 @@ const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
 
     // --- Decidir qué lógica de dibujo usar ---
     if (settings.algorithm === 'grid') {
+      // ¡Esta es la lógica que sí funciona!
       drawStylizedGridMaze(context, mazeData, settings);
     } else {
       // (Aquí iría la lógica de dibujo para 'hex', que por ahora está pendiente)
+      context.font = '16px Arial';
+      context.fillStyle = 'white';
+      context.textAlign = 'center';
+      context.fillText(
+        'El generador Hexagonal aún no está implementado para el dibujado.',
+        canvas_width / 2,
+        canvas_height / 2,
+      );
     }
   }, [mazeData, settings]);
 
@@ -350,6 +386,7 @@ const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
     <canvas
       ref={canvasRef}
       className="w-full h-auto bg-gray-900 rounded-lg"
+      // Quitamos 'image-rendering: pixelated' para que las curvas se vean suaves
     />
   );
 };
