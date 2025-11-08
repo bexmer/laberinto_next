@@ -110,22 +110,22 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-2xl backdrop-blur-lg"
+      className="space-y-8 rounded-3xl border border-white/10 bg-slate-950/70 p-8 shadow-2xl backdrop-blur-lg"
     >
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold tracking-tight text-white">
+      <div className="space-y-3">
+        <h2 className="text-2xl font-semibold tracking-tight text-white">
           Configuración rápida
         </h2>
-        <p className="text-sm text-slate-300">
+        <p className="text-base text-slate-200">
           Selecciona un preset para comenzar o ajusta cada parámetro a tu gusto.
         </p>
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap gap-3 pt-1">
           {presets.map((preset, index) => (
             <button
               key={preset.label}
               type="button"
               onClick={() => handlePreset(index)}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200 transition hover:border-blue-400 hover:text-white"
+              className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-blue-400 hover:bg-blue-500/20 hover:text-white"
             >
               {preset.label}
             </button>
@@ -134,9 +134,9 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
       </div>
 
       {/* Controles de Cuadrícula */}
-      <div className="grid grid-cols-2 gap-4">
-        <label className="flex flex-col text-xs sm:text-sm">
-          <span className="mb-1 font-semibold text-slate-200">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <label className="flex flex-col text-sm sm:text-base">
+          <span className="mb-2 text-base font-semibold text-slate-200">
             Ancho (Columnas)
           </span>
           <input
@@ -144,12 +144,12 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
             name="width"
             value={settings.width}
             onChange={handleChange}
-            className="rounded-xl border border-white/10 bg-slate-950/60 p-2 text-sm text-slate-100 shadow-inner focus:border-blue-400 focus:outline-none"
+            className="rounded-2xl border border-white/15 bg-slate-950/60 px-4 py-3 text-base text-slate-100 shadow-inner focus:border-blue-400 focus:outline-none"
             min={2}
           />
         </label>
-        <label className="flex flex-col text-xs sm:text-sm">
-          <span className="mb-1 font-semibold text-slate-200">
+        <label className="flex flex-col text-sm sm:text-base">
+          <span className="mb-2 text-base font-semibold text-slate-200">
             Alto (Filas)
           </span>
           <input
@@ -157,18 +157,18 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
             name="height"
             value={settings.height}
             onChange={handleChange}
-            className="rounded-xl border border-white/10 bg-slate-950/60 p-2 text-sm text-slate-100 shadow-inner focus:border-blue-400 focus:outline-none"
+            className="rounded-2xl border border-white/15 bg-slate-950/60 px-4 py-3 text-base text-slate-100 shadow-inner focus:border-blue-400 focus:outline-none"
             min={2}
           />
         </label>
       </div>
 
       {/* Selector de Algoritmo */}
-      <div className="space-y-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+      <div className="space-y-3">
+        <span className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-300">
           Algoritmo
         </span>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {[
             { label: 'Cuadrícula', value: 'grid' as const },
             { label: 'Hexagonal', value: 'hex' as const },
@@ -182,7 +182,7 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
                   algorithm: option.value,
                 }))
               }
-              className={`rounded-2xl border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${
+              className={`rounded-2xl border px-5 py-3 text-base font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${
                 settings.algorithm === option.value
                   ? 'border-blue-400/60 bg-blue-500/20 text-white shadow-lg'
                   : 'border-white/5 bg-white/5 text-slate-200 hover:border-blue-400/40'
@@ -192,18 +192,18 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
             </button>
           ))}
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-sm text-slate-400">
           La opción hexagonal ignora los estilos de pared personalizados.
         </p>
       </div>
 
       {/* Controles de Estilo (Solo para Grid) */}
-      <div className={`space-y-5 rounded-2xl border border-white/5 bg-white/5 p-4 ${gridControlsDisabledClass}`}>
-        <h3 className="text-sm font-semibold text-slate-200">Estética del laberinto</h3>
-        <label className="flex flex-col gap-2 text-xs sm:text-sm">
+      <div className={`space-y-6 rounded-2xl border border-white/10 bg-slate-900/50 p-5 ${gridControlsDisabledClass}`}>
+        <h3 className="text-lg font-semibold text-slate-200">Estética del laberinto</h3>
+        <label className="flex flex-col gap-3 text-sm sm:text-base">
           <div className="flex items-center justify-between gap-4">
-            <span className="font-medium text-slate-300">Grosor de Pared</span>
-            <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-slate-200">
+            <span className="font-semibold text-slate-200">Grosor de Pared</span>
+            <span className="rounded-full bg-slate-950 px-3 py-1 text-sm text-slate-100">
               {settings.wall_thickness} px
             </span>
           </div>
@@ -215,14 +215,14 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
             onChange={handleChange}
             min={1}
             max={40}
-            className="accent-blue-400"
+            className="h-3 cursor-pointer rounded-full accent-blue-400"
           />
         </label>
 
-        <label className="flex flex-col gap-2 text-xs sm:text-sm">
+        <label className="flex flex-col gap-3 text-sm sm:text-base">
           <div className="flex items-center justify-between gap-4">
-            <span className="font-medium text-slate-300">Ancho de Pasillo</span>
-            <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-slate-200">
+            <span className="font-semibold text-slate-200">Ancho de Pasillo</span>
+            <span className="rounded-full bg-slate-950 px-3 py-1 text-sm text-slate-100">
               {settings.passage_size} px
             </span>
           </div>
@@ -234,18 +234,18 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
             onChange={handleChange}
             min={1}
             max={60}
-            className="accent-blue-400"
+            className="h-3 cursor-pointer rounded-full accent-blue-400"
           />
         </label>
 
-        <label className="flex flex-col gap-2 text-xs sm:text-sm">
-          <span className="font-medium text-slate-300">Estilo de Pared</span>
+        <label className="flex flex-col gap-3 text-sm sm:text-base">
+          <span className="font-semibold text-slate-200">Estilo de Pared</span>
           <select
             name="wall_style"
             disabled={!isGrid}
             value={settings.wall_style}
             onChange={handleChange}
-            className="rounded-xl border border-white/10 bg-slate-950/60 p-2 text-sm text-slate-100 focus:border-blue-400 focus:outline-none"
+            className="rounded-2xl border border-white/15 bg-slate-950/60 px-4 py-3 text-base text-slate-100 focus:border-blue-400 focus:outline-none"
           >
             <option value="grid">Cuadrado</option>
             <option value="curved">Curvo</option>
@@ -254,10 +254,10 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
           </select>
         </label>
 
-        <label className="flex flex-col gap-2 text-xs sm:text-sm">
+        <label className="flex flex-col gap-3 text-sm sm:text-base">
           <div className="flex items-center justify-between gap-4">
-            <span className="font-medium text-slate-300">Variación de Forma</span>
-            <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-slate-200">
+            <span className="font-semibold text-slate-200">Variación de Forma</span>
+            <span className="rounded-full bg-slate-950 px-3 py-1 text-sm text-slate-100">
               {Math.round(settings.shape_variance * 100)}%
             </span>
           </div>
@@ -270,14 +270,14 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
             onChange={handleChange}
             min={0}
             max={100}
-            className="accent-blue-400"
+            className="h-3 cursor-pointer rounded-full accent-blue-400"
           />
         </label>
       </div>
 
       <button
         type="submit"
-        className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+        className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 px-6 py-4 text-lg font-semibold text-white shadow-lg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
         disabled={isLoading}
       >
         <span className="relative z-10">

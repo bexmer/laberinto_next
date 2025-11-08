@@ -82,74 +82,65 @@ const HomePage = () => {
   const hasMaze = Boolean(mazeData);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950/60 to-slate-900 px-4 py-10 text-slate-100 sm:px-6 lg:px-10">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950/60 to-slate-900 px-4 py-12 text-slate-100 sm:px-6 lg:px-12">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.25),_transparent_55%)]" />
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 lg:flex-row">
-        <section className="flex w-full flex-col gap-6 lg:w-[32rem]">
-          <header className="space-y-4 rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-2xl backdrop-blur">
-            <p className="text-xs uppercase tracking-[0.3em] text-blue-300/80">
-              Laberintos en segundos
-            </p>
-            <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">
-              Generador de Laberintos Diversos
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-12 lg:flex-row">
+        <section className="w-full max-w-xl space-y-8 lg:sticky lg:top-12 lg:self-start">
+          <header className="space-y-6 rounded-3xl border border-white/10 bg-slate-950/70 p-8 shadow-2xl backdrop-blur">
+            <p className="text-sm uppercase tracking-[0.35em] text-blue-300/90">Genera y exporta</p>
+            <h1 className="text-4xl font-bold leading-tight text-white sm:text-5xl">
+              Diseña laberintos de alta precisión
             </h1>
-            <p className="text-sm text-slate-300">
-              Juega con diferentes algoritmos y estilos de pared para crear laberintos únicos listos para imprimir o prototipar.
+            <p className="text-base text-slate-200">
+              Ajusta las dimensiones y estilos con controles intuitivos. El resultado se dibuja a máxima nitidez para que puedas imprimirlo o integrarlo a tus proyectos creativos.
             </p>
-            <ul className="grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
-              <li className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
-                <span className="h-2 w-2 rounded-full bg-blue-400" />
-                Estilos curvos, angulados y mixtos
-              </li>
-              <li className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2">
-                <span className="h-2 w-2 rounded-full bg-fuchsia-400" />
-                Exporta el canvas desde tu navegador
-              </li>
-            </ul>
           </header>
           <SettingsForm onGenerate={handleGenerate} isLoading={isLoading} />
         </section>
 
-        <section className="flex flex-1 flex-col gap-6">
-          <div className="relative flex min-h-[24rem] flex-1 flex-col rounded-3xl border border-white/10 bg-slate-900/50 p-4 shadow-2xl backdrop-blur">
-            <MazeCanvas mazeData={mazeData} />
+        <section className="flex flex-1 flex-col gap-8">
+          <div className="relative w-full max-w-4xl">
+            <div className="aspect-square w-full overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-2xl backdrop-blur">
+              <MazeCanvas mazeData={mazeData} />
+            </div>
+            <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/5 via-transparent to-white/5" />
           </div>
 
-          <div className="grid gap-4 rounded-3xl border border-white/10 bg-slate-900/60 p-5 text-sm text-slate-200 shadow-xl backdrop-blur">
-            <h2 className="text-lg font-semibold text-white">Detalles de la generación</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-5 rounded-3xl border border-white/10 bg-slate-950/60 p-6 text-base text-slate-200 shadow-xl backdrop-blur">
+            <h2 className="text-2xl font-semibold text-white">Detalle de la última generación</h2>
+            <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Algoritmo</p>
-                <p className="text-base font-medium text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Algoritmo</p>
+                <p className="text-lg font-medium text-white">
                   {lastSettings ? formatAlgorithmLabel(lastSettings) : 'Listo para generar'}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Dimensiones de canvas</p>
-                <p className="text-base font-medium text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Dimensiones renderizadas</p>
+                <p className="text-lg font-medium text-white">
                   {hasMaze
-                    ? `${Math.round(mazeData!.canvas_width)} x ${Math.round(mazeData!.canvas_height)} px`
+                    ? `${Math.round(mazeData!.canvas_width)} × ${Math.round(mazeData!.canvas_height)} px`
                     : 'Pendiente de generación'}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Segmentos de pared</p>
-                <p className="text-base font-medium text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Segmentos de pared</p>
+                <p className="text-lg font-medium text-white">
                   {hasMaze ? mazeData!.walls.length.toLocaleString('es-ES') : '—'}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Configuración base</p>
-                <p className="text-sm text-slate-300">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Configuración aplicada</p>
+                <p className="text-base text-slate-300">
                   {lastSettings
                     ? describeSettings(lastSettings)
-                    : 'Selecciona o ajusta un preset para ver los detalles.'}
+                    : 'Selecciona un preset o ajusta los parámetros para comenzar.'}
                 </p>
               </div>
-              <div className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Consejo</p>
-                <p className="text-sm text-slate-300">
-                  Ajusta el grosor de pared y la variación de forma para conseguir trazos fluidos ideales para trazadores láser o ilustración.
+              <div className="space-y-1 sm:col-span-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">Consejo</p>
+                <p className="text-base text-slate-300">
+                  Combina pasillos amplios con variaciones suaves para resultados orgánicos, o usa paredes finas y variación baja para un laberinto técnico listo para fabricación.
                 </p>
               </div>
             </div>
