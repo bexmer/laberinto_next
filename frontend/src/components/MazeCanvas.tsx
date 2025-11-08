@@ -75,6 +75,22 @@ const getRenderLayout = (
   return { colWidths, colStarts, rowHeights, rowStarts, colCenters, rowCenters };
 };
 
+const buildGridFromCells = (
+  cells: MazeData['cells'],
+  width: number,
+  height: number,
+): MazeCell[][] => {
+  const grid = Array.from({ length: height }, () =>
+    Array.from({ length: width }, () => ({ x: 0, y: 0, open_walls: 0 })),
+  );
+
+  cells.forEach((cell) => {
+    grid[cell.y][cell.x] = cell;
+  });
+
+  return grid;
+};
+
 /**
  * Calcula la geometría de una esquina con ángulos.
  * (Portado de computeCornerGeometry de maze.js)
@@ -169,12 +185,7 @@ const drawStylizedGridMaze = (
   const W = 8; // Bitmasks
 
   // 1. Convertir celdas a una matriz 2D para fácil acceso
-  const grid: MazeCell[][] = Array.from({ length: grid_height }, () =>
-    Array.from({ length: grid_width }, () => ({ x: 0, y: 0, open_walls: 0 })),
-  );
-  cells.forEach((cell) => {
-    grid[cell.y][cell.x] = cell;
-  });
+  const grid = buildGridFromCells(cells, grid_width, grid_height);
 
   // 2. Calcular el layout
   const layout = getRenderLayout(grid_width, grid_height, passage_size, wall_thickness);
@@ -334,6 +345,49 @@ const drawStylizedGridMaze = (
   }
 };
 
+const drawWireMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
+  const { cells, grid_width, grid_height, passage_size, wall_thickness } = mazeData;
+
+  const E = 2;
+  const S = 4;
+
+  const { colCenters, rowCenters } = getRenderLayout(
+    grid_width,
+    grid_height,
+    passage_size,
+    wall_thickness,
+  );
+
+  ctx.strokeStyle = '#b3b3b3';
+  ctx.lineWidth = Math.max(1, Math.round(passage_size * 0.08));
+  ctx.lineCap = 'butt';
+  ctx.lineJoin = 'miter';
+
+  const grid = buildGridFromCells(cells, grid_width, grid_height);
+
+  for (let y = 0; y < grid_height; y++) {
+    for (let x = 0; x < grid_width; x++) {
+      const cell = grid[y][x];
+      const cx = colCenters[x];
+      const cy = rowCenters[y];
+
+      if (cell.open_walls & E && x < grid_width - 1) {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(colCenters[x + 1], cy);
+        ctx.stroke();
+      }
+
+      if (cell.open_walls & S && y < grid_height - 1) {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, rowCenters[y + 1]);
+        ctx.stroke();
+      }
+    }
+  }
+};
+
 // --- EL COMPONENTE CANVAS PRINCIPAL ---
 
 const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
@@ -346,33 +400,35 @@ const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    // Limpiar canvas con el color de fondo
-    context.fillStyle = '#111827'; // bg-gray-900
-    context.fillRect(0, 0, canvas.width, canvas.height);
-
     // Si no hay datos, no dibujar nada
     if (!mazeData || !settings) {
+      context.fillStyle = '#111827';
+      context.fillRect(0, 0, canvas.width, canvas.height);
       return;
     }
 
     const { canvas_width, canvas_height } = mazeData;
+    const backgroundColor = settings.render_style === 'wire' ? '#f8fafc' : '#111827';
 
     // Ajustar el tamaño del canvas
     canvas.width = canvas_width;
     canvas.height = canvas_height;
 
     // Volver a limpiar con el tamaño y color correctos
-    context.fillStyle = '#111827';
+    context.fillStyle = backgroundColor;
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     // --- Decidir qué lógica de dibujo usar ---
     if (settings.algorithm === 'grid') {
-      // ¡Esta es la lógica que sí funciona!
-      drawStylizedGridMaze(context, mazeData, settings);
+      if (settings.render_style === 'wire') {
+        drawWireMaze(context, mazeData);
+      } else {
+        drawStylizedGridMaze(context, mazeData, settings);
+      }
     } else {
       // (Aquí iría la lógica de dibujo para 'hex', que por ahora está pendiente)
       context.font = '16px Arial';
-      context.fillStyle = 'white';
+      context.fillStyle = settings.render_style === 'wire' ? '#1f2937' : 'white';
       context.textAlign = 'center';
       context.fillText(
         'El generador Hexagonal aún no está implementado para el dibujado.',

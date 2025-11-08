@@ -17,6 +17,7 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
     wall_thickness: 10,
     wall_style: 'organic mix',
     shape_variance: 0.55, // 0.0 a 1.0
+    render_style: 'wire',
   });
 
   const handleChange = (
@@ -24,10 +25,12 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
   ) => {
     const { name, value, type } = event.target;
 
-    let processedValue: string | number | GenerationSettings['algorithm'] = value;
+    let processedValue: string | number = value;
 
     if (name === 'algorithm') {
       processedValue = value as GenerationSettings['algorithm'];
+    } else if (name === 'render_style') {
+      processedValue = value as GenerationSettings['render_style'];
     } else if (type === 'number') {
       processedValue = Number(value);
     } else if (type === 'range' && name === 'shape_variance') {
@@ -79,6 +82,19 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
         >
           <option value="grid">Cuadrícula (Estilizado)</option>
           <option value="hex" disabled>Hexagonal (Próximamente)</option>
+        </select>
+      </label>
+
+      <label className="flex flex-col text-sm">
+        <span className="mb-1 font-semibold text-gray-300">Modo de Renderizado</span>
+        <select
+          name="render_style"
+          value={settings.render_style}
+          onChange={handleChange}
+          className="rounded-md border border-gray-700 bg-gray-900 p-2 text-gray-100 focus:border-blue-500 focus:outline-none"
+        >
+          <option value="wire">Pasillos finos (Wire)</option>
+          <option value="corridors">Pasillos con grosor</option>
         </select>
       </label>
 
