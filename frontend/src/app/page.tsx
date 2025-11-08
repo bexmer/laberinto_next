@@ -16,7 +16,10 @@ const HomePage = () => {
       width: settings.width.toString(),
       height: settings.height.toString(),
       algorithm: settings.algorithm,
-      cellSize: settings.cellSize.toString(),
+      passage_size: settings.passage_size.toString(),
+      wall_thickness: settings.wall_thickness.toString(),
+      wall_style: settings.wall_style,
+      shape_variance: settings.shape_variance.toString(),
     });
 
     const url = `/api/generate-maze?${params.toString()}`;
