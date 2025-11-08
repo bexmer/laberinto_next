@@ -23,15 +23,52 @@ const HomePage = () => {
 
     try {
       const response = await fetch(url);
+
       if (!response.ok) {
-        throw new Error(`Error al generar el laberinto: ${response.statusText}`);
+        const contentType = response.headers.get('content-type');
+        let errorMessage = `Error al generar el laberinto (${response.status})`;
+
+        if (contentType?.includes('application/json')) {
+          try {
+            const errorBody = (await response.json()) as {
+              message?: string;
+              details?: string;
+            };
+
+            if (errorBody.message) {
+              errorMessage = errorBody.message;
+            }
+
+            if (errorBody.details) {
+              errorMessage = `${errorMessage}. Detalles: ${errorBody.details}`;
+            }
+          } catch (jsonError) {
+            console.error('No se pudo leer la respuesta de error como JSON:', jsonError);
+          }
+        } else {
+          try {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = `${errorMessage}. Detalles: ${errorText}`;
+            }
+          } catch (textError) {
+            console.error('No se pudo leer la respuesta de error como texto:', textError);
+          }
+        }
+
+        throw new Error(errorMessage);
       }
 
       const data: MazeData = await response.json();
       setMazeData(data);
     } catch (error) {
       console.error(error);
-      alert('No se pudo generar el laberinto. Revisa la consola para más detalles.');
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo generar el laberinto. Revisa la consola para más detalles.';
+
+      alert(message);
     } finally {
       setIsLoading(false);
     }
