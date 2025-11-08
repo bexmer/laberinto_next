@@ -396,17 +396,45 @@ const drawDeltaMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
   const { colCenters, rowCenters } = layout;
 
   const stroke = Math.max(1, Math.round(passage_size * 0.18));
-  const offset = (passage_size + wall_thickness) / 2;
+  const amplitude = (passage_size + wall_thickness) * 0.45;
+  const trimRatio = 0.55;
 
   ctx.strokeStyle = '#111111';
   ctx.lineWidth = stroke;
-  ctx.lineCap = 'round';
+  ctx.lineCap = 'butt';
   ctx.lineJoin = 'round';
 
-  const drawCurve = (start: Point, control: Point, end: Point) => {
+  const drawRoundedPeak = (start: Point, apex: Point, end: Point) => {
+    const vecToStart = { x: apex.x - start.x, y: apex.y - start.y };
+    const vecToEnd = { x: apex.x - end.x, y: apex.y - end.y };
+    const lenToStart = Math.hypot(vecToStart.x, vecToStart.y);
+    const lenToEnd = Math.hypot(vecToEnd.x, vecToEnd.y);
+
+    if (lenToStart === 0 || lenToEnd === 0) {
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      return;
+    }
+
+    const trimStart = lenToStart * trimRatio;
+    const trimEnd = lenToEnd * trimRatio;
+
+    const beforeApex: Point = {
+      x: apex.x - (vecToStart.x / lenToStart) * trimStart,
+      y: apex.y - (vecToStart.y / lenToStart) * trimStart,
+    };
+    const afterApex: Point = {
+      x: apex.x - (vecToEnd.x / lenToEnd) * trimEnd,
+      y: apex.y - (vecToEnd.y / lenToEnd) * trimEnd,
+    };
+
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
-    ctx.quadraticCurveTo(control.x, control.y, end.x, end.y);
+    ctx.lineTo(beforeApex.x, beforeApex.y);
+    ctx.quadraticCurveTo(apex.x, apex.y, afterApex.x, afterApex.y);
+    ctx.lineTo(end.x, end.y);
     ctx.stroke();
   };
 
@@ -419,30 +447,26 @@ const drawDeltaMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
 
       if (cell.open_walls & 2 && x < grid_width - 1) {
         const nx = colCenters[x + 1];
-        const spanX = Math.abs(nx - cx);
-        const bend = Math.min(offset, spanX / 2) * 0.5;
-        const control: Point = {
+        const apex: Point = {
           x: (cx + nx) / 2,
-          y: cy + parity * bend,
+          y: cy + parity * amplitude,
         };
-        drawCurve({ x: cx, y: cy }, control, { x: nx, y: cy });
+        drawRoundedPeak({ x: cx, y: cy }, apex, { x: nx, y: cy });
       }
 
       if (cell.open_walls & 4 && y < grid_height - 1) {
         const ny = rowCenters[y + 1];
-        const spanY = Math.abs(ny - cy);
-        const bend = Math.min(offset, spanY / 2) * 0.5;
-        const control: Point = {
-          x: cx + parity * bend,
+        const apex: Point = {
+          x: cx + parity * amplitude,
           y: (cy + ny) / 2,
         };
-        drawCurve({ x: cx, y: cy }, control, { x: cx, y: ny });
+        drawRoundedPeak({ x: cx, y: cy }, apex, { x: cx, y: ny });
       }
     }
   }
 
   // Añadir contorno exterior para asemejar la referencia
-  ctx.lineWidth = stroke * 1.1;
+  ctx.lineWidth = stroke;
   ctx.beginPath();
   ctx.rect(
     stroke,
