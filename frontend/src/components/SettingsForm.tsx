@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { GenerationSettings } from '../utils/types';
 
 type SettingsFormProps = {
@@ -19,6 +19,48 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
     wall_style: 'organic mix',
     shape_variance: 0.55, // 55%
   });
+
+  const presets = useMemo(
+    () => [
+      {
+        label: 'Clásico',
+        values: {
+          width: 20,
+          height: 20,
+          algorithm: 'grid' as const,
+          passage_size: 12,
+          wall_thickness: 8,
+          wall_style: 'grid' as const,
+          shape_variance: 0.1,
+        },
+      },
+      {
+        label: 'Orgánico',
+        values: {
+          width: 18,
+          height: 18,
+          algorithm: 'grid' as const,
+          passage_size: 16,
+          wall_thickness: 10,
+          wall_style: 'organic mix' as const,
+          shape_variance: 0.75,
+        },
+      },
+      {
+        label: 'Hex Chill',
+        values: {
+          width: 16,
+          height: 14,
+          algorithm: 'hex' as const,
+          passage_size: 14,
+          wall_thickness: 10,
+          wall_style: 'grid' as const,
+          shape_variance: 0,
+        },
+      },
+    ],
+    [],
+  );
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -55,57 +97,115 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
   // Deshabilitar estilos si el algoritmo es 'hex'
   const isGrid = settings.algorithm === 'grid';
 
+  const handlePreset = (index: number) => {
+    const preset = presets[index];
+    if (!preset) return;
+    setSettings(preset.values);
+  };
+
+  const gridControlsDisabledClass = isGrid
+    ? ''
+    : 'pointer-events-none opacity-40 grayscale';
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-gray-800 p-4 rounded-lg shadow-md space-y-4"
+      className="space-y-6 rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-2xl backdrop-blur-lg"
     >
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold tracking-tight text-white">
+          Configuración rápida
+        </h2>
+        <p className="text-sm text-slate-300">
+          Selecciona un preset para comenzar o ajusta cada parámetro a tu gusto.
+        </p>
+        <div className="flex flex-wrap gap-2 pt-1">
+          {presets.map((preset, index) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => handlePreset(index)}
+              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200 transition hover:border-blue-400 hover:text-white"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Controles de Cuadrícula */}
       <div className="grid grid-cols-2 gap-4">
-        <label className="flex flex-col text-sm">
-          <span className="mb-1 font-semibold">Ancho (Columnas)</span>
+        <label className="flex flex-col text-xs sm:text-sm">
+          <span className="mb-1 font-semibold text-slate-200">
+            Ancho (Columnas)
+          </span>
           <input
             type="number"
             name="width"
             value={settings.width}
             onChange={handleChange}
-            className="rounded-md border border-gray-700 bg-gray-900 p-2 text-gray-100 focus:border-blue-500 focus:outline-none"
+            className="rounded-xl border border-white/10 bg-slate-950/60 p-2 text-sm text-slate-100 shadow-inner focus:border-blue-400 focus:outline-none"
             min={2}
           />
         </label>
-        <label className="flex flex-col text-sm">
-          <span className="mb-1 font-semibold">Alto (Filas)</span>
+        <label className="flex flex-col text-xs sm:text-sm">
+          <span className="mb-1 font-semibold text-slate-200">
+            Alto (Filas)
+          </span>
           <input
             type="number"
             name="height"
             value={settings.height}
             onChange={handleChange}
-            className="rounded-md border border-gray-700 bg-gray-900 p-2 text-gray-100 focus:border-blue-500 focus:outline-none"
+            className="rounded-xl border border-white/10 bg-slate-950/60 p-2 text-sm text-slate-100 shadow-inner focus:border-blue-400 focus:outline-none"
             min={2}
           />
         </label>
       </div>
 
       {/* Selector de Algoritmo */}
-      <label className="flex flex-col text-sm">
-        <span className="mb-1 font-semibold">Algoritmo</span>
-        <select
-          name="algorithm"
-          value={settings.algorithm}
-          onChange={handleChange}
-          className="rounded-md border border-gray-700 bg-gray-900 p-2 text-gray-100 focus:border-blue-500 focus:outline-none"
-        >
-          <option value="grid">Cuadrícula (Estilizado)</option>
-          <option value="hex">Hexagonal (Orgánico)</option>
-        </select>
-      </label>
-      
+      <div className="space-y-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+          Algoritmo
+        </span>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: 'Cuadrícula', value: 'grid' as const },
+            { label: 'Hexagonal', value: 'hex' as const },
+          ].map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() =>
+                setSettings((prev) => ({
+                  ...prev,
+                  algorithm: option.value,
+                }))
+              }
+              className={`rounded-2xl border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-400/60 ${
+                settings.algorithm === option.value
+                  ? 'border-blue-400/60 bg-blue-500/20 text-white shadow-lg'
+                  : 'border-white/5 bg-white/5 text-slate-200 hover:border-blue-400/40'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-slate-400">
+          La opción hexagonal ignora los estilos de pared personalizados.
+        </p>
+      </div>
+
       {/* Controles de Estilo (Solo para Grid) */}
-      <div className={`space-y-4 ${!isGrid ? 'opacity-50' : ''}`}>
-        <label className="flex flex-col text-sm">
-          <div className="flex justify-between">
-            <span className="mb-1 font-semibold">Grosor de Pared</span>
-            <span className="text-gray-400">{settings.wall_thickness} px</span>
+      <div className={`space-y-5 rounded-2xl border border-white/5 bg-white/5 p-4 ${gridControlsDisabledClass}`}>
+        <h3 className="text-sm font-semibold text-slate-200">Estética del laberinto</h3>
+        <label className="flex flex-col gap-2 text-xs sm:text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <span className="font-medium text-slate-300">Grosor de Pared</span>
+            <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-slate-200">
+              {settings.wall_thickness} px
+            </span>
           </div>
           <input
             type="range"
@@ -115,13 +215,16 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
             onChange={handleChange}
             min={1}
             max={40}
+            className="accent-blue-400"
           />
         </label>
 
-        <label className="flex flex-col text-sm">
-          <div className="flex justify-between">
-            <span className="mb-1 font-semibold">Ancho de Pasillo</span>
-            <span className="text-gray-400">{settings.passage_size} px</span>
+        <label className="flex flex-col gap-2 text-xs sm:text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <span className="font-medium text-slate-300">Ancho de Pasillo</span>
+            <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-slate-200">
+              {settings.passage_size} px
+            </span>
           </div>
           <input
             type="range"
@@ -131,17 +234,18 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
             onChange={handleChange}
             min={1}
             max={60}
+            className="accent-blue-400"
           />
         </label>
 
-        <label className="flex flex-col text-sm">
-          <span className="mb-1 font-semibold">Estilo de Pared</span>
+        <label className="flex flex-col gap-2 text-xs sm:text-sm">
+          <span className="font-medium text-slate-300">Estilo de Pared</span>
           <select
             name="wall_style"
             disabled={!isGrid}
             value={settings.wall_style}
             onChange={handleChange}
-            className="rounded-md border border-gray-700 bg-gray-900 p-2 text-gray-100 focus:border-blue-500 focus:outline-none"
+            className="rounded-xl border border-white/10 bg-slate-950/60 p-2 text-sm text-slate-100 focus:border-blue-400 focus:outline-none"
           >
             <option value="grid">Cuadrado</option>
             <option value="curved">Curvo</option>
@@ -150,30 +254,36 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
           </select>
         </label>
 
-        <label className="flex flex-col text-sm">
-           <div className="flex justify-between">
-            <span className="mb-1 font-semibold">Variación de Forma</span>
-            <span className="text-gray-400">{Math.round(settings.shape_variance * 100)}%</span>
+        <label className="flex flex-col gap-2 text-xs sm:text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <span className="font-medium text-slate-300">Variación de Forma</span>
+            <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs text-slate-200">
+              {Math.round(settings.shape_variance * 100)}%
+            </span>
           </div>
           <input
             type="range"
             name="shape_variance"
             disabled={!isGrid}
             // El input range es de 0-100, pero el estado es 0.0-1.0
-            value={settings.shape_variance * 100} 
+            value={settings.shape_variance * 100}
             onChange={handleChange}
             min={0}
             max={100}
+            className="accent-blue-400"
           />
         </label>
       </div>
 
       <button
         type="submit"
-        className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-900"
+        className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
         disabled={isLoading}
       >
-        {isLoading ? 'Generando...' : 'Generar Laberinto'}
+        <span className="relative z-10">
+          {isLoading ? 'Generando laberinto...' : 'Generar laberinto'}
+        </span>
+        <div className="absolute inset-0 -translate-x-full bg-white/20 transition group-hover:translate-x-0" />
       </button>
     </form>
   );
