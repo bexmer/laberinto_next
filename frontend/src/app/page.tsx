@@ -5,8 +5,6 @@ import MazeCanvas from '../components/MazeCanvas';
 import SettingsForm from '../components/SettingsForm';
 import type { GenerationSettings, MazeData } from '../utils/types';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
-
 const HomePage = () => {
   const [mazeData, setMazeData] = useState<MazeData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +19,7 @@ const HomePage = () => {
       cellSize: settings.cellSize.toString(),
     });
 
-    const url = `${API_BASE_URL}/generate-maze?${params.toString()}`;
+    const url = `/api/generate-maze?${params.toString()}`;
 
     try {
       const response = await fetch(url);
