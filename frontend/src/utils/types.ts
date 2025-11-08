@@ -27,5 +27,5 @@ export interface GenerationSettings {
   wall_thickness: number;
   wall_style: 'grid' | 'curved' | 'angled' | 'organic mix';
   shape_variance: number; // 0.0 (0%) a 1.0 (100%)
-  render_style: 'corridors' | 'wire';
+  render_style: 'corridors' | 'wire' | 'delta';
 }

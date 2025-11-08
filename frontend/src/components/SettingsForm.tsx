@@ -17,7 +17,7 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
     wall_thickness: 10,
     wall_style: 'organic mix',
     shape_variance: 0.55, // 0.0 a 1.0
-    render_style: 'wire',
+    render_style: 'delta',
   });
 
   const handleChange = (
@@ -93,6 +93,7 @@ const SettingsForm = ({ onGenerate, isLoading }: SettingsFormProps) => {
           onChange={handleChange}
           className="rounded-md border border-gray-700 bg-gray-900 p-2 text-gray-100 focus:border-blue-500 focus:outline-none"
         >
+          <option value="delta">Delta (Triangular)</option>
           <option value="wire">Pasillos finos (Wire)</option>
           <option value="corridors">Pasillos con grosor</option>
         </select>

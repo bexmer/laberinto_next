@@ -388,6 +388,78 @@ const drawWireMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
   }
 };
 
+const drawDeltaMaze = (ctx: CanvasRenderingContext2D, mazeData: MazeData) => {
+  const { cells, grid_width, grid_height, passage_size, wall_thickness } = mazeData;
+
+  const grid = buildGridFromCells(cells, grid_width, grid_height);
+  const layout = getRenderLayout(grid_width, grid_height, passage_size, wall_thickness);
+  const { colCenters, rowCenters } = layout;
+
+  const stroke = Math.max(1, Math.round(passage_size * 0.18));
+  const offset = (passage_size + wall_thickness) / 2;
+
+  ctx.strokeStyle = '#111111';
+  ctx.lineWidth = stroke;
+  ctx.lineCap = 'square';
+  ctx.lineJoin = 'miter';
+
+  const drawPolyline = (points: Point[]) => {
+    if (points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+  };
+
+  for (let y = 0; y < grid_height; y++) {
+    for (let x = 0; x < grid_width; x++) {
+      const cell = grid[y][x];
+      const cx = colCenters[x];
+      const cy = rowCenters[y];
+      const parity = (x + y) % 2 === 0 ? 1 : -1;
+
+      if (cell.open_walls & 2 && x < grid_width - 1) {
+        const nx = colCenters[x + 1];
+        const spanX = Math.abs(nx - cx);
+        const bend = Math.min(offset, spanX / 2) * 0.55;
+        const midX = (cx + nx) / 2;
+        const midY = cy + parity * bend;
+        drawPolyline([
+          { x: cx, y: cy },
+          { x: midX, y: midY },
+          { x: nx, y: cy },
+        ]);
+      }
+
+      if (cell.open_walls & 4 && y < grid_height - 1) {
+        const ny = rowCenters[y + 1];
+        const spanY = Math.abs(ny - cy);
+        const bend = Math.min(offset, spanY / 2) * 0.55;
+        const midY = (cy + ny) / 2;
+        const midX = cx + parity * bend;
+        drawPolyline([
+          { x: cx, y: cy },
+          { x: midX, y: midY },
+          { x: cx, y: ny },
+        ]);
+      }
+    }
+  }
+
+  // Añadir contorno exterior para asemejar la referencia
+  ctx.lineWidth = stroke * 1.1;
+  ctx.beginPath();
+  ctx.rect(
+    stroke,
+    stroke,
+    mazeData.canvas_width - stroke * 2,
+    mazeData.canvas_height - stroke * 2,
+  );
+  ctx.stroke();
+};
+
 // --- EL COMPONENTE CANVAS PRINCIPAL ---
 
 const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
@@ -402,13 +474,22 @@ const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
 
     // Si no hay datos, no dibujar nada
     if (!mazeData || !settings) {
-      context.fillStyle = '#111827';
+      const fallbackBg = settings?.render_style === 'delta'
+        ? '#ffffff'
+        : settings?.render_style === 'wire'
+          ? '#f8fafc'
+          : '#111827';
+      context.fillStyle = fallbackBg;
       context.fillRect(0, 0, canvas.width, canvas.height);
       return;
     }
 
     const { canvas_width, canvas_height } = mazeData;
-    const backgroundColor = settings.render_style === 'wire' ? '#f8fafc' : '#111827';
+    const backgroundColor = settings.render_style === 'wire'
+      ? '#f8fafc'
+      : settings.render_style === 'delta'
+        ? '#ffffff'
+        : '#111827';
 
     // Ajustar el tamaño del canvas
     canvas.width = canvas_width;
@@ -422,13 +503,20 @@ const MazeCanvas = ({ mazeData, settings }: MazeCanvasProps) => {
     if (settings.algorithm === 'grid') {
       if (settings.render_style === 'wire') {
         drawWireMaze(context, mazeData);
+      } else if (settings.render_style === 'delta') {
+        drawDeltaMaze(context, mazeData);
       } else {
         drawStylizedGridMaze(context, mazeData, settings);
       }
     } else {
       // (Aquí iría la lógica de dibujo para 'hex', que por ahora está pendiente)
       context.font = '16px Arial';
-      context.fillStyle = settings.render_style === 'wire' ? '#1f2937' : 'white';
+      context.fillStyle =
+        settings.render_style === 'wire'
+          ? '#1f2937'
+          : settings.render_style === 'delta'
+            ? '#111827'
+            : 'white';
       context.textAlign = 'center';
       context.fillText(
         'El generador Hexagonal aún no está implementado para el dibujado.',
