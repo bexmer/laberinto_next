@@ -10,15 +10,21 @@ const API_BASE_URL = 'http://127.0.0.1:8000';
 const HomePage = () => {
   const [mazeData, setMazeData] = useState<MazeData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastSettings, setLastSettings] = useState<GenerationSettings | null>(null);
 
   const handleGenerate = async (settings: GenerationSettings) => {
     setIsLoading(true);
+    setMazeData(null);
+    setLastSettings(settings);
 
     const params = new URLSearchParams({
       width: settings.width.toString(),
       height: settings.height.toString(),
       algorithm: settings.algorithm,
-      cellSize: settings.cellSize.toString(),
+      passage_size: settings.passage_size.toString(),
+      wall_thickness: settings.wall_thickness.toString(),
+      wall_style: settings.wall_style,
+      shape_variance: settings.shape_variance.toString(),
     });
 
     const url = `${API_BASE_URL}/generate-maze?${params.toString()}`;
@@ -46,8 +52,8 @@ const HomePage = () => {
         <SettingsForm onGenerate={handleGenerate} isLoading={isLoading} />
         {isLoading && <p className="mt-4 text-sm text-gray-400">Generando...</p>}
       </div>
-      <div className="flex-1">
-        <MazeCanvas mazeData={mazeData} />
+      <div className="flex-1 rounded-lg overflow-hidden bg-gray-800">
+        <MazeCanvas mazeData={mazeData} settings={lastSettings} />
       </div>
     </main>
   );
